@@ -1,0 +1,44 @@
+---
+resources:
+  - name: test_concourse_golang113
+    type: git
+    icon: github-circle
+    source:
+      uri: https://github.com/nwiizo/test_concourse_golang113
+
+  - name: golang-1.13.x-image
+    type: registry-image
+    icon: docker
+    source:
+      repository: golang
+      tag: 1.13-stretch
+
+task-config: &task-config
+  platform: linux
+  inputs:
+    - name: test_concourse_golang113
+      path: /go/src/github.com/nwiizo/test_concourse_golang113
+  run:
+    path: /bin/sh
+    args:
+      - -c
+      - |
+        SRCPATH=$PWD/go/src/github.com/nwiizo/test_concourse_golang113
+        GOPATH=$PWD/go
+        cd $SRCPATH
+        go get -t -v ./...
+        go test -v ./...
+
+
+jobs:
+  - name: golang-1.13
+    public: true
+    plan:
+      - get: test_concourse_golang113
+        trigger: true
+      - get: golang-1.13.x-image
+        trigger: true
+      - task: run-tests
+        image: golang-1.13.x-image
+        config:
+          << : *task-config
